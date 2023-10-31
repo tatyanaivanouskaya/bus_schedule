@@ -17,41 +17,51 @@ package com.example.busschedule.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.busschedule.BusScheduleApplication
 import com.example.busschedule.data.BusSchedule
+import com.example.busschedule.data.BusScheduleRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
-class BusScheduleViewModel: ViewModel() {
+class BusScheduleViewModel(
+    private val busScheduleRepository: BusScheduleRepository,
+) : ViewModel() {
 
-    // Get example bus schedule
-    fun getFullSchedule(): Flow<List<BusSchedule>> = flowOf(
-        listOf(
-            BusSchedule(
-                1,
-                "Example Street",
-                0
+    val fullBusScheduleUiState: StateFlow<FullBusScheduleUiState> =
+        busScheduleRepository.getAllItemsStream().map { FullBusScheduleUiState(it) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
+                initialValue = FullBusScheduleUiState()
             )
-        )
-    )
 
-    // Get example bus schedule by stop
-    fun getScheduleFor(stopName: String): Flow<List<BusSchedule>> = flowOf(
-        listOf(
-            BusSchedule(
-                1,
-                "Example Street",
-                0
-            )
-        )
-    )
+    fun getScheduleFor(stopName: String): Flow<List<BusSchedule>> =
+        busScheduleRepository.getItemStream(stopName)
 
     companion object {
-        val factory : ViewModelProvider.Factory = viewModelFactory {
+        val factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                BusScheduleViewModel()
+                BusScheduleViewModel(
+                    busScheduleApplication().container.busScheduleRepository,
+                )
             }
         }
+        private const val TIMEOUT_MILLIS = 5_000L
     }
 }
+
+/**
+ * Extension function to queries for [-Application-] object and returns an instance of
+ * [-InventoryApplication-].
+ */
+fun CreationExtras.busScheduleApplication(): BusScheduleApplication =
+    (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as BusScheduleApplication)
+
+data class FullBusScheduleUiState(val itemList: List<BusSchedule> = listOf())

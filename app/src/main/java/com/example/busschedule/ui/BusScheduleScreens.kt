@@ -77,7 +77,7 @@ fun BusScheduleApp(
     val navController = rememberNavController()
     val fullScheduleTitle = stringResource(R.string.full_schedule)
     var topAppBarTitle by remember { mutableStateOf(fullScheduleTitle) }
-    val fullSchedule by viewModel.getFullSchedule().collectAsState(emptyList())
+    val fullSchedule by viewModel.fullBusScheduleUiState.collectAsState()
     val onBackHandler = {
         topAppBarTitle = fullScheduleTitle
         navController.navigateUp()
@@ -98,7 +98,7 @@ fun BusScheduleApp(
         ) {
             composable(BusScheduleScreens.FullSchedule.name) {
                 FullScheduleScreen(
-                    busSchedules = fullSchedule,
+                    busSchedules = fullSchedule.itemList,
                     contentPadding = innerPadding,
                     onScheduleClick = { busStopName ->
                         navController.navigate(
@@ -237,7 +237,7 @@ fun BusScheduleDetails(
             ) {
                 if (onScheduleClick == null) {
                     Text(
-                        text = "--",
+                        text = "---",
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = dimensionResource(R.dimen.font_large).value.sp,
                             fontWeight = FontWeight(300)
